@@ -14,7 +14,7 @@ def Harris_detect(Img, WinWidth, Threshold):
     Img_height, Img_width = Img_matrix.shape
     HarrisResult = np.zeros((Img_height, Img_width))
     # 整图梯度计算
-    Iy, Ix = np.gradient(Img_matrix)
+    #Iy, Ix = np.gradient(Img_matrix)
     '''
     # 用sobel算子求图像梯度
     sobelx = cv2.Sobel(Img_matrix, cv2.CV_64F, dx=1, dy=0)
@@ -23,16 +23,15 @@ def Harris_detect(Img, WinWidth, Threshold):
     Iy = cv2.convertScaleAbs(sobely)
     # 这里有问题，最终找到的是角点附近的点。感觉是因为sobel计算梯度是隔一个做差？
     '''
-    '''
+    
     # 普通方法计算图像梯度
     Ix = np.zeros(Img_matrix.shape)
-    Iy = Ix
+    Iy = Ix.copy()   # 直接=会导致Ix随Iy变化
     for x in range(Img_matrix.shape[1]-1):
         for y in range(Img_matrix.shape[0]-1):
             Ix[y, x] = int(Img_matrix[y, x+1]) - int(Img_matrix[y, x])   #  图像像素值是ubyte类型，ubyte类型数据范围为0~255，若做运算出现负值或超出255，则会抛出异常
             Iy[y, x] = int(Img_matrix[y+1, x]) - int(Img_matrix[y, x])
     # 这种方法也不行，甚至找不到角点
-    '''
     Ixx = Ix**2
     Iyy = Iy**2
     Ixy = Ix*Iy
