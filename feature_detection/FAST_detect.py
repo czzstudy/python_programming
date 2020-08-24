@@ -1,11 +1,10 @@
 # this program is to use FAST to detect feature points
 '''
 一些记录：
-1.目前还没有极大值抑制，第二步检验不是连续判断，没有结果........
+有结果了，目前还没有极大值抑制，第二步检验不是连续判断
 '''
 import cv2
 import numpy as np
-import math
 
 # FAST特征检测
 def FAST_detect(Img, Threshold):
@@ -26,12 +25,14 @@ def FAST_detect(Img, Threshold):
             delta9 = abs(int(Img_matrix[y+3, x]) - centerValue)
             delta13 = abs(int(Img_matrix[y, x-3]) - centerValue)
             delta = np.array([delta1, delta5, delta9, delta13]) > Threshold
+            #print((y, x), delta)
             if delta.sum() >= 3:
                 Img_win = mask * Img_matrix[y-3:y+4, x-3:x+4]
                 delta_win = (abs(Img_win - centerValue*mask) > Threshold) # 这里没有连续判断阈值
-                if delta_win.sum() > 10:
+                #print(delta_win)
+                if delta_win.sum() > 13:
                     FASTResult[y, x] = 1
-
+    return FASTResult
 
 # 将识别到的角点可视化到原图像上
 def Result_Display(Img, FASTResult):
@@ -44,6 +45,6 @@ def Result_Display(Img, FASTResult):
 
 if __name__=='__main__':
     Img = cv2.imread("F://study//python//python_programming//resource//test.jpg", 0) # read the image in gray level 
-    Threshold = 10
+    Threshold = 50
     FASTResult = FAST_detect(Img, Threshold)
     Result_Display(Img, FASTResult)
