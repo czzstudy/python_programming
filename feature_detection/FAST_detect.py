@@ -1,8 +1,9 @@
 # this program is to use FAST to detect feature points
 '''
 一些记录：
-有结果了，目前还没有极大值抑制，第二步检验不是连续判断
+有结果了，极大值抑制还不行，第二步检验不是连续判断
 '''
+
 import cv2
 import numpy as np
 
@@ -17,6 +18,7 @@ def FAST_detect(Img, Threshold):
                     [0,0,1,1,1,0,0]])
     Img_matrix = np.array(Img)
     FASTResult = np.zeros(Img_matrix.shape)
+    Result_List = []
     for y in range(3, Img_matrix.shape[0]-4):
         for x in range(3, Img_matrix.shape[1]-4):
             centerValue = int(Img_matrix[y, x])
@@ -30,9 +32,26 @@ def FAST_detect(Img, Threshold):
                 Img_win = mask * Img_matrix[y-3:y+4, x-3:x+4]
                 delta_win = (abs(Img_win - centerValue*mask) > Threshold) # 这里没有连续判断阈值
                 #print(delta_win)
-                if delta_win.sum() > 13:
+                if delta_win.sum() > 12:
+                    score = sum(sum(abs(Img_win - centerValue*mask) ** 2))
                     FASTResult[y, x] = 1
-    return FASTResult
+                    Result_List.append([y, x, score])
+    return FASTResult, Result_List
+
+# 非极大值抑制
+def Non_maximum_suppresion(Detect_Result, win_width):
+    offset = win_width//2
+    for y in range(offset, Detect_Result.shape[0]-offset):
+        for x in range(offset, Detect_Result.shape[1]-offset):
+            if Detect_Result[y, x] > 0:
+                maximum = np.max(Detect_Result[y-offset:y+offset+1, x-offset:x+offset+1])
+                if Detect_Result[y, x] == maximum:
+                    win = Detect_Result[y-offset:y+offset+1, x-offset:x+offset+1]
+                    win[win!=maximum] = 0
+                    Detect_Result[y-offset:y+offset+1, x-offset:x+offset+1] = win
+                else:
+                    pass
+    return Detect_Result
 
 # 将识别到的角点可视化到原图像上
 def Result_Display(Img, FASTResult):
@@ -46,5 +65,7 @@ def Result_Display(Img, FASTResult):
 if __name__=='__main__':
     Img = cv2.imread("F://study//python//python_programming//resource//test.jpg", 0) # read the image in gray level 
     Threshold = 50
-    FASTResult = FAST_detect(Img, Threshold)
+    FASTResult, Result_List = FAST_detect(Img, Threshold)
+    # FASTResult = Non_maximum_suppresion(FASTResult, 5)
+    print(Result_List)
     Result_Display(Img, FASTResult)

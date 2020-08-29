@@ -1,7 +1,7 @@
 # this program is to use Harris to detect the corners
 '''
 一些记录：
-1.目前还没有极大值抑制，用常规方法求梯度Ix和Iy时结果都是负的，但用sobel求梯度时有正的，但需要很大的阈值，且结果不太像角点，好的用棋盘格试了一些果然不行
+非极大值抑制还不太行，sobel求梯度的方法不太行，numpy求梯度的方法会得到角点旁边很多点，目前用常规方法求出来的效果较好
 
 '''
 import cv2
@@ -14,7 +14,7 @@ def Harris_detect(Img, WinWidth, Threshold):
     Img_height, Img_width = Img_matrix.shape
     HarrisResult = np.zeros((Img_height, Img_width))
     # 整图梯度计算
-    #Iy, Ix = np.gradient(Img_matrix)
+    # Iy, Ix = np.gradient(Img_matrix)
     '''
     # 用sobel算子求图像梯度
     sobelx = cv2.Sobel(Img_matrix, cv2.CV_64F, dx=1, dy=0)
@@ -31,17 +31,18 @@ def Harris_detect(Img, WinWidth, Threshold):
         for y in range(Img_matrix.shape[0]-1):
             Ix[y, x] = int(Img_matrix[y, x+1]) - int(Img_matrix[y, x])   #  图像像素值是ubyte类型，ubyte类型数据范围为0~255，若做运算出现负值或超出255，则会抛出异常
             Iy[y, x] = int(Img_matrix[y+1, x]) - int(Img_matrix[y, x])
-    # 这种方法也不行，甚至找不到角点
+    
     Ixx = Ix**2
     Iyy = Iy**2
     Ixy = Ix*Iy
     offset = WinWidth//2
+    Result_List = []
     # 目前该程序因为窗宽的影响没有外圈补充，故计算时没有考虑原图像窗宽宽度的外围像素
-    for v in range(offset, Img_width-offset):
-        for u in range(offset, Img_height-offset):
-            Img_winxx = Ixx[u-offset:u+offset+1, v-offset:v+offset+1]
-            Img_winyy = Iyy[u-offset:u+offset+1, v-offset:v+offset+1]
-            Img_winxy = Ixy[u-offset:u+offset+1, v-offset:v+offset+1]
+    for x in range(offset, Img_width-offset):
+        for y in range(offset, Img_height-offset):
+            Img_winxx = Ixx[y-offset:y+offset+1, x-offset:x+offset+1]
+            Img_winyy = Iyy[y-offset:y+offset+1, x-offset:x+offset+1]
+            Img_winxy = Ixy[y-offset:y+offset+1, x-offset:x+offset+1]
             # 计算得到每个像素点对应的4*4椭圆特征矩阵
             Gauss_matrix = Gauss_Mcalc(Img_winxx.shape[0])
             feature_matrix = np.zeros((2, 2))
@@ -52,8 +53,9 @@ def Harris_detect(Img, WinWidth, Threshold):
             R = Harris_Rcalc(feature_matrix)
             # print(R)
             if R > Threshold:
-                HarrisResult[u, v] = 1
-    return HarrisResult
+                HarrisResult[y, x] = R
+                Result_List.append([y, x, R])
+    return HarrisResult, Result_List
 
 
 # 由窗宽得到一个符合高斯分布的矩阵
@@ -80,18 +82,35 @@ def Harris_Rcalc(feature_matrix):
 # 将识别到的角点可视化到原图像上
 def Result_Display(Img, HarrisResult):
     color_img = cv2.cvtColor(Img, cv2.COLOR_GRAY2RGB)
-    color_img[HarrisResult==1] = [0, 0, 255]
+    color_img[HarrisResult>0] = [0, 0, 255]
     cv2.namedWindow("Img-Harris")
     cv2.imshow("Img-Harris", color_img)
     cv2.waitKey(0) 
     cv2.destroyAllWindows()
 
+# 非极大值抑制
+def Non_maximum_suppresion(Detect_Result, win_width):
+    offset = win_width//2
+    for y in range(offset, Detect_Result.shape[0]-offset):
+        for x in range(offset, Detect_Result.shape[1]-offset):
+            if Detect_Result[y, x] > 0:
+                maximum = np.max(Detect_Result[y-offset:y+offset+1, x-offset:x+offset+1])
+                if Detect_Result[y, x] == maximum:
+                    win = Detect_Result[y-offset:y+offset+1, x-offset:x+offset+1]
+                    win[win!=maximum] = 0
+                    Detect_Result[y-offset:y+offset+1, x-offset:x+offset+1] = win
+                else:
+                    pass
+    return Detect_Result
+
 if __name__=='__main__':
     Img = cv2.imread("F://study//python//python_programming//resource//checkerboard2.jpg", 0) # read the image in gray level 
     WinWidth = 5  # 邻域窗宽
     Threshold = 10000  # 算法阈值 
-    Detect_Result = Harris_detect(Img, WinWidth, Threshold)
+    Detect_Result, Result_List = Harris_detect(Img, WinWidth, Threshold)
     #print(sum(sum(Detect_Result)))
+    #Detect_Result = Non_maximum_suppresion(Detect_Result, 5)
+    #print(Result_List)
     Result_Display(Img, Detect_Result)
     
 
