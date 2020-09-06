@@ -65,9 +65,9 @@ def Non_maximum_suppresion(Detect_Result, Result_List, radius):
     Result_List_output = np.array(Result_List_output)
     return Detect_Result_nms, Result_List_output
 
-# BRISK特征描述
-def BRISK_description(Img, point_list, winwidth):
-    BRISK_result = []
+# BRIEF特征描述
+def BRIEF_description(Img, point_list, winwidth):
+    BRIEF_result = []
     mean = [0, 0]
     cov = [[winwidth**2/25, 0], [0, winwidth**2/25]]
     # 高斯平滑降噪
@@ -85,9 +85,9 @@ def BRISK_description(Img, point_list, winwidth):
                 encoder.append(1)
             else:
                 encoder.append(0)
-        BRISK_result.append(encoder)
-    BRISK_result = np.array(BRISK_result, dtype='uint8') # 特征匹配函数必须要uint8
-    return BRISK_result
+        BRIEF_result.append(encoder)
+    BRIEF_result = np.array(BRIEF_result, dtype='uint8') # 特征匹配函数必须要uint8
+    return BRIEF_result
 
 # 将识别到的角点可视化到原图像上
 def Result_Display(Img, FASTResult):
@@ -100,12 +100,12 @@ def Result_Display(Img, FASTResult):
 
 if __name__=='__main__':
     Img_T = cv2.imread("F://study//python//python_programming//resource//test.jpg", 0) # read the image in gray level 
-    Img_m = cv2.imread("F://study//python//python_programming//resource//test_rotated.jpg", 0)
+    Img_m = cv2.imread("F://study//python//python_programming//resource//test.jpg", 0)
     Threshold = 50
     #FASTResult, Result_List = FAST_detect(Img, Threshold)
     #Detect_Result_nms, Result_List_nms = Non_maximum_suppresion(FASTResult, Result_List, 3)
-    #BRISK_result = BRISK_description(Img, Result_List_nms, 7)
-    #print(BRISK_result)
+    #BRIEF_result = BRIEF_description(Img, Result_List_nms, 7)
+    #print(BRIEF_result)
     #Result_Display(Img, Detect_Result_nms)
     print("Detect begin!")
     # detect the template image
@@ -114,19 +114,19 @@ if __name__=='__main__':
     #print(des1)
     FASTResult_T, Result_List_T = FAST_detect(Img_T, Threshold)
     Detect_Result_nms_T, Result_List_nms_T = Non_maximum_suppresion(FASTResult_T, Result_List_T, 3)
-    BRISK_result_T = BRISK_description(Img_T, Result_List_nms_T, 7)
+    BRIEF_result_T = BRIEF_description(Img_T, Result_List_nms_T, 7)
     # detect the moving image
     #kp2, des2 = orb.detectAndCompute(Img_m,None)
     FASTResult_m, Result_List_m = FAST_detect(Img_m, Threshold)
     Detect_Result_nms_m, Result_List_nms_m = Non_maximum_suppresion(FASTResult_m, Result_List_m, 3)
-    BRISK_result_m = BRISK_description(Img_m, Result_List_nms_m, 7)
+    BRIEF_result_m = BRIEF_description(Img_m, Result_List_nms_m, 7)
     print("Detect OK!")
     # try to match two images
     bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True) #建立匹配关系
     #matches = bf.match(des1,des2)
     #matches = sorted(matches,key=lambda x:x.distance)
     #result= cv2.drawMatches(Img_T, kp1, Img_m, kp2, matches[:40],None,flags=2)
-    matches = bf.match(BRISK_result_T, BRISK_result_m)
+    matches = bf.match(BRIEF_result_T, BRIEF_result_m)
     matches = sorted(matches,key=lambda x:x.distance)
     # 将坐标点集转为关键点类型
     kp1 = [cv2.KeyPoint(Result_List_nms_T[i][0], Result_List_nms_T[i][1], 1) for i in range(Result_List_nms_T.shape[0])]
